@@ -3,33 +3,29 @@ package simpleVM;
 import java.io.*;
 import java.util.*;
 
-import simpleVM.Exceptions.AssemblerException;
-
 public class MyAssembler {
 
 	private MyVirtualMachine vm;
 	private int programmCounter = 0;
 
-	public static final int NOP = 0b0000;
-	public static final int LOAD = 0b0001;
-	public static final int MOV = 0b0010;
-	public static final int ADD = 0b0011;
-	public static final int SUB = 0b0100;
-	public static final int MUL = 0b0101;
-	public static final int DIV = 0b0110;
-	public static final int PUSH = 0b0111;
-	public static final int POP = 0b1000;
-	public static final int JMP = 0b1001;
-	public static final int JIZ = 0b1010;
-	public static final int JIH = 0b1011;
-	public static final int JSR = 0b1100;
-	public static final int RTS = 0b1101;
+	private static final int NOP = 0b0000;
+	private static final int LOAD = 0b0001;
+	private static final int MOV = 0b0010;
+	private static final int ADD = 0b0011;
+	private static final int SUB = 0b0100;
+	private static final int MUL = 0b0101;
+	private static final int DIV = 0b0110;
+	private static final int PUSH = 0b0111;
+	private static final int POP = 0b1000;
+	private static final int JMP = 0b1001;
+	private static final int JIZ = 0b1010;
+	private static final int JIH = 0b1011;
+	private static final int JSR = 0b1100;
+	private static final int RTS = 0b1101;
 
 	/**
 	 * Erzeugt einen Assembler.
-	 * 
-	 * @param vm
-	 *            Dazugehörige Virtuelle Maschine
+	 * @param vm Dazugehörige Virtuelle Maschine
 	 */
 	public MyAssembler(MyVirtualMachine vm) {
 
@@ -63,7 +59,7 @@ public class MyAssembler {
 				// Prüft ob es eine nächste Zeile gibt und ruft die
 				// run()-Methode auf, wenn es noch eine Zeile gibt.
 				while (fileScanner.hasNextLine()) {
-					runAssembler(fileScanner.nextLine());
+					runAssembler(fileScanner.nextLine(), programmCounter);
 				}
 
 			} catch (IOException ex) {
@@ -77,7 +73,9 @@ public class MyAssembler {
 			}
 		}
 
-		// Setzt die Größe des Profiler Arrays
+//		System.out.println("Anzahl Programmzeilen: " + programmCounter);
+		
+		//Setzt die Größe des Profiler Arrays
 		vm.setProfiler(programmCounter);
 	}
 
@@ -86,17 +84,23 @@ public class MyAssembler {
 	 * 
 	 * @param programmCode
 	 *            Aktueller Programmcode aus der Datei
+	 * @param programmLine
+	 *            Aktuelle Programmzeile (für das auffinden von Fehlern)
 	 * @param vm
 	 *            Die verwendete Virtuelle Maschine.
 	 * @throws AssemblerException
 	 */
-	private void runAssembler(String programmCode) throws AssemblerException {
+	private void runAssembler(String programmCode, int programmLine) throws AssemblerException {
 
+//		System.out.println("ProgrammCode: " + programmCode);
 		String command = "";
 		String temp = "";
+		int wert = 0;
+		int rx = 0;
+		int ry = 0;
+		int toMemory = 0;
+		int fromMemory = 0;
 		int opCode = 0;
-		int fromMemory;
-		int toMemory;
 		Scanner stringScanner = null;
 
 		try {
@@ -112,17 +116,27 @@ public class MyAssembler {
 
 			case "NOP":
 				opCode = NOP;
-				vm.getMemory()[programmCounter++] = opCode;
+				vm.getMemory()[programmCounter++] = opCode;		
+//				System.out.println("OpCode: " + opCode);
+
 				break;
 
 			case "LOAD":
 				opCode = LOAD;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, '#');
+				// Überliest das #-Zeichen falls vorhanden.
+				if (temp.charAt(0) == '#') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addWert(temp);
+				wert = Integer.parseInt(temp);
+				opCode += (wert << 4);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "MOV":
@@ -138,9 +152,14 @@ public class MyAssembler {
 					toMemory = 0;
 				}
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRX(temp);
+				rx = Integer.parseInt(temp);
 				stringScanner.next();
 
 				// Überliest das Komma.
@@ -155,158 +174,279 @@ public class MyAssembler {
 					fromMemory = 0;
 				}
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRY(temp);
+				ry = Integer.parseInt(temp);
+
+				opCode += (rx << 4);
+				opCode += (ry << 8);
 				opCode += (fromMemory << 12);
 				opCode += (toMemory << 13);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "ADD":
 				opCode = ADD;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRX(temp);
+				rx = Integer.parseInt(temp);
 				stringScanner.next();
 
 				// Überliest das Komma.
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
-				opCode += addRY(temp);
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
+
+				ry = Integer.parseInt(temp);
+
+				opCode += (rx << 4) + (ry << 8);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 			case "SUB":
 				opCode = SUB;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRX(temp);
+				rx = Integer.parseInt(temp);
 				stringScanner.next();
 
 				// Überliest das Komma.
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRY(temp);
+				ry = Integer.parseInt(temp);
+
+				opCode += (rx << 4) + (ry << 8);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "MUL":
 				opCode = MUL;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRX(temp);
+				rx = Integer.parseInt(temp);
 				stringScanner.next();
 
 				// Überliest das ,-Zeichen.
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRY(temp);
+				ry = Integer.parseInt(temp);
+
+				opCode += (rx << 4) + (ry << 8);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "DIV":
 				opCode = DIV;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRX(temp);
+				rx = Integer.parseInt(temp);
 				stringScanner.next();
 
 				// Überliest das ,-Zeichen.
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRY(temp);
+				ry = Integer.parseInt(temp);
+
+				opCode += (rx << 4) + (ry << 8);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "PUSH":
-
+				
 				opCode = PUSH;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRX(temp);
+				rx = Integer.parseInt(temp);
+
+				opCode += (rx << 4);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "POP":
-
+				
 				opCode = POP;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, 'R');
+				// Überliest das R-Zeichen falls vorhanden.
+				if (temp.charAt(0) == 'R') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addRX(temp);
+				rx = Integer.parseInt(temp);
+
+				opCode += (rx << 4);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "JMP":
 				opCode = JMP;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, '#');
+				// Überliest das #-Zeichen falls vorhanden.
+				if (temp.charAt(0) == '#') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException();
+				}
 
-				opCode += addWert(temp);
-				vm.getMemory()[programmCounter++] = opCode;
+				wert = Integer.parseInt(temp);
+				opCode += (wert << 4);
+				vm.getMemory()[programmCounter++] = opCode;	
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "JIZ":
 				opCode = JIZ;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, '#');
+				// Überliest das #-Zeichen falls vorhanden.
+				if (temp.charAt(0) == '#') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addWert(temp);
+				wert = Integer.parseInt(temp);
+				opCode += (wert << 4);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "JIH":
 				opCode = JIH;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, '#');
+				// Überliest das #-Zeichen falls vorhanden.
+				if (temp.charAt(0) == '#') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addWert(temp);
+				wert = Integer.parseInt(temp);
+				opCode += (wert << 4);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "JSR":
 				opCode = JSR;
 				temp = stringScanner.next();
 
-				temp = removeChar(temp, '#');
+				// Überliest das #-Zeichen falls vorhanden.
+				if (temp.charAt(0) == '#') {
+					temp = temp.substring(1);
+				} else {
+					throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
+				}
 
-				opCode += addWert(temp);
+				wert = Integer.parseInt(temp);
+				opCode += (wert << 4);
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			case "RTS":
+				
 				opCode = RTS;
 				vm.getMemory()[programmCounter++] = opCode;
+//				System.out.println("OpCode: " + opCode);
+				
 				break;
 
 			default:
-
+				
+//				System.out.println("Kein OpCode");
 				break;
 			}
 
 		} catch (IndexOutOfBoundsException | NumberFormatException | NoSuchElementException ex) {
-			throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmCounter + 1) + " !");
+			throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmLine + 1) + " !");
 
 		} finally {
 
@@ -314,34 +454,6 @@ public class MyAssembler {
 				stringScanner.close();
 			}
 
-		}
-	}
-
-	private int addWert(String temp) {
-		return (Integer.parseInt(temp) << 4);
-	}
-
-	private int addRX(String temp) {
-		return (Integer.parseInt(temp) << 4);
-	}
-
-	private int addRY(String temp) {
-		return (Integer.parseInt(temp) << 8);
-	}
-
-	private int addFromMemory(String temp) {
-		return 0;
-	}
-
-	private int addToMemory(String temp) {
-		return 0;
-	}
-
-	private String removeChar(String temp, char removed) throws AssemblerException {
-		if (temp.charAt(0) == removed) {
-			return temp.substring(1);
-		} else {
-			throw new AssemblerException("Code ist fehlerhaft in Zeile " + (programmCounter + 1) + " !");
 		}
 	}
 }
