@@ -1,4 +1,4 @@
-package simpleVM;
+package simpleVM.Exceptions;
 
 public class VirtualMachineException extends Exception {
 

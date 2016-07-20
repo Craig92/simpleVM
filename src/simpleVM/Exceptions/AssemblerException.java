@@ -1,4 +1,4 @@
-package simpleVM;
+package simpleVM.Exceptions;
 
 public class AssemblerException extends Exception {
 
