@@ -4,6 +4,8 @@ import java.io.*;
 import java.text.*;
 import java.util.*;
 
+import simpleVM.Exceptions.VirtualMachineException;
+
 public class MyVirtualMachine {
 
 	private int[] profiler;

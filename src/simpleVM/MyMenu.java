@@ -2,6 +2,9 @@ package simpleVM;
 
 import java.util.Scanner;
 
+import simpleVM.Exceptions.AssemblerException;
+import simpleVM.Exceptions.VirtualMachineException;
+
 public class MyMenu {
 
 	public static void main(String[] args) {
