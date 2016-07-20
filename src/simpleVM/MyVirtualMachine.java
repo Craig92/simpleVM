@@ -17,21 +17,6 @@ public class MyVirtualMachine {
 	private Stack<Integer> subRoutineStack;
 	private Stack<Integer> registerStack;
 
-	private static final int NOP = 0b0000;
-	private static final int LOAD = 0b0001;
-	private static final int MOV = 0b0010;
-	private static final int ADD = 0b0011;
-	private static final int SUB = 0b0100;
-	private static final int MUL = 0b0101;
-	private static final int DIV = 0b0110;
-	private static final int PUSH = 0b0111;
-	private static final int POP = 0b1000;
-	private static final int JMP = 0b1001;
-	private static final int JIZ = 0b1010;
-	private static final int JIH = 0b1011;
-	private static final int JSR = 0b1100;
-	private static final int RTS = 0b1101;
-
 	/**
 	 * Inizialisiert die Virtuelle Maschine.
 	 * 
@@ -86,185 +71,110 @@ public class MyVirtualMachine {
 	 */
 	private void runVirtualMaschine() throws VirtualMachineException {
 
-//		System.out.println("Virtuelle Maschine führt den Code aus: ");
-
 		try {
 
 			int opCode = memory[programmCounter];
 			int command = opCode & 0xF;
-			int wert;
-			int rx;
-			int ry;
-			int toMemory;
-			int fromMemory;
+			int wert = (opCode >> 4) & 0xFFF;
+			int rx = (opCode >> 4) & 0xF;
+			int ry = (opCode >> 8) & 0xF;
+			int fromMemory = (opCode >> 12) & 0x1;
+			int toMemory = (opCode >> 13) & 0x1;
 
 			switch (command) {
 
-			case NOP:
+			case MyAssembler.NOP:
 				programmCounter++;
-				// System.out.println("NOP Befehl ausgeführt");
-
 				break;
 
-			case LOAD:
-				wert = (opCode >> 4) & 0xFFF;
+			case MyAssembler.LOAD:
 				register[0] = wert;
 				programmCounter++;
-				// System.out.println("LOAD #" + wert + " Befehl ausgeführt");
-
 				break;
 
-			case MOV:
-				rx = (opCode >> 4) & 0xF;
-				ry = (opCode >> 8) & 0xF;
-				fromMemory = (opCode >> 12) & 0x1;
-				toMemory = (opCode >> 13) & 0x1;
-
+			case MyAssembler.MOV:
 				if (toMemory == 1 && fromMemory == 1) {
-					// System.out.println("MOV (R" + rx + ") , (R" + ry + ")
-					// Befehl ausgeführt");
 					memory[register[rx]] = memory[register[ry]];
 				} else if (toMemory == 1 && fromMemory == 0) {
-					// System.out.println("MOV (R" + rx + ") , R" + ry + "
-					// Befehl ausgeführt");
 					memory[register[rx]] = register[ry];
 				} else if (toMemory == 0 && fromMemory == 1) {
-					// System.out.println("MOV R" + rx + " , (R" + ry + ")
-					// Befehl ausgeführt");
 					register[rx] = memory[register[ry]];
 				} else {
-					// System.out.println("MOV R" + rx + " , R" + ry + " Befehl
-					// ausgeführt");
 					register[rx] = register[ry];
 				}
 				programmCounter++;
 
 				break;
 
-			case ADD:
-				rx = (opCode >> 4) & 0xF;
-				ry = (opCode >> 8) & 0xF;
-
+			case MyAssembler.ADD:
 				register[rx] = register[rx] + register[ry];
 				programmCounter++;
-				// System.out.println("ADD R" + rx + " , R" + ry + " Befehl
-				// ausgeführt");
-
 				break;
 
-			case SUB:
-				rx = (opCode >> 4) & 0xF;
-				ry = (opCode >> 8) & 0xF;
-
+			case MyAssembler.SUB:
 				register[rx] = register[rx] - register[ry];
 				programmCounter++;
-				// System.out.println("SUB R" + rx + " , R" + ry + " Befehl
-				// ausgeführt");
-
 				break;
 
-			case MUL:
-				rx = (opCode >> 4) & 0xF;
-				ry = (opCode >> 8) & 0xF;
-
+			case MyAssembler.MUL:
 				register[rx] = register[rx] * register[ry];
 				programmCounter++;
-				// System.out.println("MUL R" + rx + " , R" + ry + " Befehl
-				// ausgeführt");
-
 				break;
 
-			case DIV:
-				rx = (opCode >> 4) & 0xF;
-				ry = (opCode >> 8) & 0xF;
-
+			case MyAssembler.DIV:
 				register[rx] = register[rx] / register[ry];
 				programmCounter++;
-				// System.out.println("DIV R" + rx + " , R" + ry + " Befehl
-				// ausgeführt");
-
 				break;
 
-			case PUSH:
-				rx = (opCode >> 4) & 0xF;
-
+			case MyAssembler.PUSH:
 				registerStack.push(register[rx]);
 				programmCounter++;
-				// System.out.println("PUSH R" + rx + " Befehl ausgeführt");
-
 				break;
 
-			case POP:
-				rx = (opCode >> 4) & 0xF;
-
+			case MyAssembler.POP:
 				if (!registerStack.isEmpty()) {
 					register[rx] = registerStack.pop();
 					programmCounter++;
-					// System.out.println("POP R" + rx + " Befehl ausgeführt");
 				} else {
 					isFinish = true;
-					// System.out.println("POP R" + rx + " Befehl ausgeführt
-					// ENDE");
 				}
 
 				break;
 
-			case JMP:
-				wert = (opCode >> 4) & 0xFFF;
+			case MyAssembler.JMP:
 				programmCounter = wert;
-				// System.out.println("JMP #" + wert + " Befehl ausgeführt");
-
 				break;
 
-			case JIZ:
-				wert = (opCode >> 4) & 0xFFF;
-
+			case MyAssembler.JIZ:
 				if (register[0] == 0) {
 					programmCounter = wert;
-					// System.out.println("JIZ #" + wert + " Befehl
-					// ausgeführt");
 				} else {
 					programmCounter++;
-					// System.out.println("JIZ #" + wert + " Befehl nicht
-					// ausgeführt");
 				}
 
 				break;
 
-			case JIH:
-				wert = (opCode >> 4) & 0xFFF;
-
+			case MyAssembler.JIH:
 				if (register[0] > 0) {
 					programmCounter = wert;
-					// System.out.println("JIH #" + wert + " Befehl
-					// ausgeführt");
 				} else {
 					programmCounter++;
-					// System.out.println("JIH #" + wert + " Befehl nicht
-					// ausgeführt");
 				}
 
 				break;
 
-			case JSR:
-				wert = (opCode >> 4) & 0xFFF;
-
+			case MyAssembler.JSR:
 				subRoutineStack.push(programmCounter + 1);
 				programmCounter = wert;
-				// System.out.println("JSR #" + wert + " Befehl ausgeführt");
-
 				break;
 
-			case RTS:
-
+			case MyAssembler.RTS:
 				if (!subRoutineStack.isEmpty()) {
 					programmCounter = subRoutineStack.pop();
-//					System.out.println("RTS Befehl ausgeführt");
 				} else {
 					isFinish = true;
-//					System.out.println("RTS Befehl ausgeführt ENDE");
 				}
-
+				
 				break;
 
 			default:
@@ -292,6 +202,7 @@ public class MyVirtualMachine {
 
 	/**
 	 * Gibt die Register Inhalte auf der Konsole aus.
+	 * Vorsicht: Kann je nach Programmumfang sehr lange dauern!
 	 */
 	private void getRegisterData() {
 		for (int i = 0; i != register.length / 2; i++) {
@@ -318,12 +229,11 @@ public class MyVirtualMachine {
 		try {
 
 			output = new FileWriter(
-					"C:/Users/Thorsten/Documents/Eclipse/Eclipse Umgebung/HWP_SS16/src/simpleVM/ProfilerFile.txt");
-
+					".../ProfilerFile.txt");
 			for (int i = 0; i != profiler.length; i++) {
 				if (profiler[i] != 0) {
-//					System.out.println("Die Zeile " + (i + 1) + " wurde " + profiler[i] + "mal mit einem Anteil von "
-//							+ new DecimalFormat("0.0000").format((profiler[i] / summe) * 100) + "% aufgerufen.");
+					System.out.println("Die Zeile " + (i + 1) + " wurde " + profiler[i] + "mal mit einem Anteil von "
+							+ new DecimalFormat("0.0000").format((profiler[i] / summe) * 100) + "% aufgerufen.");
 					output.write("Die Zeile " + (i + 1) + " wurde " + profiler[i] + "mal  mit einem Anteil von "
 							+ new DecimalFormat("0.0000").format((profiler[i] / summe) * 100) + "% aufgerufen. \n");
 				}
@@ -337,18 +247,34 @@ public class MyVirtualMachine {
 
 	}
 
-	public void setProfiler(int length) {
+	/**
+	 * Legt die Größe des Arrays des Profilers fest.
+	 * @param length Länge des Arrays
+	 */
+	public void setProfilerArray(int length) {
 		this.profiler = new int[length];
 	}
 
+	/**
+	 * Liefert den Speicher als Array zurück.
+	 * @return Speicher-Array
+	 */
 	public int[] getMemory() {
 		return this.memory;
 	}
 
+	/**
+	 * Liefert die Größe des Registers zurück.
+	 * @return Größe des Registers
+	 */
 	public int getRegisterSize() {
 		return this.register.length;
 	}
 
+	/**
+	 * Liefert die Größe des Speichers zurück.
+	 * @return Größe des Speichers
+	 */
 	public int getMemorySize() {
 		return this.memory.length;
 	}

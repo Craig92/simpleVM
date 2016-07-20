@@ -78,7 +78,7 @@ public class MyAssembler {
 		}
 
 		// Setzt die Größe des Profiler Arrays
-		vm.setProfiler(programmCounter);
+		vm.setProfilerArray(programmCounter);
 	}
 
 	/**
