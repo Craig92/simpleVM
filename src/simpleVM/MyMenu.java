@@ -22,7 +22,7 @@ public class MyMenu {
 		Scanner scanner = new Scanner(System.in);
 
 		String fileName = scanner.nextLine();
-				
+
 		System.out.println("");
 
 		try {
@@ -40,9 +40,9 @@ public class MyMenu {
 			virtualMachine.getProfilerData();
 
 		} catch (AssemblerException e) {
-			System.err.println("Aufgrund eines Fehlers im Assembler wurde das Programm unerwartet beendet!");
+			System.err.println("Aufgrund eines Fehlers im Assembler wurde das Programm beendet!");
 		} catch (VirtualMachineException e) {
-			System.err.println("Aufgrund eines Fehlers in der Virtuellen Maschine wurde das Programm unerwartet beendet!");
+			System.err.println("Aufgrund eines Fehlers in der Virtuellen Maschine wurde das Programm beendet!");
 		}
 
 		scanner.close();
