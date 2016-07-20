@@ -26,10 +26,10 @@ public class MyAssembler {
 	public static final int RTS = 0b1101;
 
 	/**
-	 * Erzeugt einen Assembler.
+	 * Erzeugt einen Assembler mit einer virtuellen Maschine.
 	 * 
 	 * @param vm
-	 *            Dazugehörige Virtuelle Maschine
+	 *            Virtuelle Maschine
 	 */
 	public MyAssembler(MyVirtualMachine vm) {
 
@@ -37,12 +37,12 @@ public class MyAssembler {
 	}
 
 	/**
-	 * Startet den Assembler, der eine Textdatei zeilenweise liest und die
-	 * runAssembler Methode für jede Zeile aufruft bis das Ende der Datei
-	 * erreicht wurde
+	 * Startet den Assembler, der eine Textdatei zeilenweise ausliest und die
+	 * runAssembler() Methode für jede Zeile aufruft bis das Ende der Datei
+	 * erreicht wurde,
 	 * 
 	 * @param inputData
-	 *            Dateiname des Assamblercodedatei
+	 *            Dateiname des Assemblerprogramms.
 	 * @throws AssemblerException
 	 */
 	public void startAssembler(String inputData) throws AssemblerException {
@@ -61,7 +61,7 @@ public class MyAssembler {
 				fileScanner = new Scanner(inputFile);
 
 				// Prüft ob es eine nächste Zeile gibt und ruft die
-				// run()-Methode auf, wenn es noch eine Zeile gibt.
+				// runAssembler()-Methode auf, wenn es noch eine Zeile gibt.
 				while (fileScanner.hasNextLine()) {
 					runAssembler(fileScanner.nextLine());
 				}
@@ -85,9 +85,9 @@ public class MyAssembler {
 	 * Wandelt zeilenweise den Programmcode in OpCode um.
 	 * 
 	 * @param programmCode
-	 *            Aktueller Programmcode aus der Datei
+	 *            Aktuelle Textzeile aus der Datei.
 	 * @param vm
-	 *            Die verwendete Virtuelle Maschine.
+	 *            Virtuelle Maschine.
 	 * @throws AssemblerException
 	 */
 	private void runAssembler(String programmCode) throws AssemblerException {
@@ -95,15 +95,15 @@ public class MyAssembler {
 		String command = "";
 		String temp = "";
 		int opCode = 0;
-		int fromMemory;
 		int toMemory;
+		int fromMemory;
 		Scanner stringScanner = null;
 
 		try {
 
 			stringScanner = new Scanner(programmCode);
 
-			// Liest den ersten Teil der Zeile mit dem Befehl.
+			// Liest dem Assemblerbefehl aus der Textzeile
 			if (stringScanner.hasNext()) {
 				command = stringScanner.next();
 			}
@@ -118,10 +118,7 @@ public class MyAssembler {
 			case "LOAD":
 				opCode = LOAD;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, '#');
-
-				opCode += addWert(temp);
+				opCode += addWert(removeChar(temp, '#'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
@@ -129,35 +126,27 @@ public class MyAssembler {
 				opCode = MOV;
 				temp = stringScanner.next();
 
-				// Überliest die Klammern bei dem ersten Register.
 				if (temp.charAt(0) == '(') {
-					temp = temp.substring(1);
-					temp = temp.substring(0, temp.length() - 1);
+					temp = removeClamps(temp);
 					toMemory = 1;
 				} else {
 					toMemory = 0;
 				}
 
-				temp = removeChar(temp, 'R');
+				opCode += addRX(removeChar(temp, 'R'));
 
-				opCode += addRX(temp);
 				stringScanner.next();
 
-				// Überliest das Komma.
 				temp = stringScanner.next();
 
-				// Überliest die Klammern bei dem zweiten Register.
 				if (temp.charAt(0) == '(') {
-					temp = temp.substring(1);
-					temp = temp.substring(0, temp.length() - 1);
+					temp = removeClamps(temp);
 					fromMemory = 1;
 				} else {
 					fromMemory = 0;
 				}
 
-				temp = removeChar(temp, 'R');
-
-				opCode += addRY(temp);
+				opCode += addRY(removeChar(temp, 'R'));
 				opCode += (fromMemory << 12);
 				opCode += (toMemory << 13);
 				vm.getMemory()[programmCounter++] = opCode;
@@ -166,132 +155,81 @@ public class MyAssembler {
 			case "ADD":
 				opCode = ADD;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRX(temp);
+				opCode += addRX(removeChar(temp, 'R'));
 				stringScanner.next();
-
-				// Überliest das Komma.
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-				opCode += addRY(temp);
+				opCode += addRY(removeChar(temp, 'R'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 			case "SUB":
 				opCode = SUB;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRX(temp);
+				opCode += addRX(removeChar(temp, 'R'));
 				stringScanner.next();
-
-				// Überliest das Komma.
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRY(temp);
+				opCode += addRY(removeChar(temp, 'R'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "MUL":
 				opCode = MUL;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRX(temp);
+				opCode += addRX(removeChar(temp, 'R'));
 				stringScanner.next();
-
-				// Überliest das ,-Zeichen.
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRY(temp);
+				opCode += addRY(removeChar(temp, 'R'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "DIV":
 				opCode = DIV;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRX(temp);
+				opCode += addRX(removeChar(temp, 'R'));
 				stringScanner.next();
-
-				// Überliest das ,-Zeichen.
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRY(temp);
+				opCode += addRY(removeChar(temp, 'R'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "PUSH":
-
 				opCode = PUSH;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRX(temp);
+				opCode += addRX(removeChar(temp, 'R'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "POP":
-
 				opCode = POP;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, 'R');
-
-				opCode += addRX(temp);
+				opCode += addRX(removeChar(temp, 'R'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "JMP":
 				opCode = JMP;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, '#');
-
-				opCode += addWert(temp);
+				opCode += addWert(removeChar(temp, '#'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "JIZ":
 				opCode = JIZ;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, '#');
-
-				opCode += addWert(temp);
+				opCode += addWert(removeChar(temp, '#'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "JIH":
 				opCode = JIH;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, '#');
-
-				opCode += addWert(temp);
+				opCode += addWert(removeChar(temp, '#'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
 			case "JSR":
 				opCode = JSR;
 				temp = stringScanner.next();
-
-				temp = removeChar(temp, '#');
-
-				opCode += addWert(temp);
+				opCode += addWert(removeChar(temp, '#'));
 				vm.getMemory()[programmCounter++] = opCode;
 				break;
 
@@ -317,26 +255,65 @@ public class MyAssembler {
 		}
 	}
 
+	/**
+	 * Liest den Wert aus dem String und passt in entsprechend für den OpCode
+	 * an.
+	 * 
+	 * @param temp
+	 *            String mit Wert
+	 * @return Wert
+	 */
 	private int addWert(String temp) {
 		return (Integer.parseInt(temp) << 4);
 	}
 
+	/**
+	 * Liest den RX-Wert aus dem String und passt in entsprechend für den OpCode
+	 * an.
+	 * 
+	 * @param temp
+	 *            String mit RX-Wert
+	 * @return RX
+	 */
 	private int addRX(String temp) {
 		return (Integer.parseInt(temp) << 4);
 	}
 
+	/**
+	 * Liest den RY-Wert aus dem String und passt in entsprechend für den OpCode
+	 * an.
+	 * 
+	 * @param temp
+	 *            String mit RY-Wert
+	 * @return RY
+	 */
 	private int addRY(String temp) {
 		return (Integer.parseInt(temp) << 8);
 	}
 
-	private int addFromMemory(String temp) {
-		return 0;
+	/**
+	 * Entfernt das ersten und letzte Zeichen des Strings
+	 * 
+	 * @param temp
+	 *            String mit Klammern
+	 * @return String ohne Klammern
+	 */
+	private String removeClamps(String temp) {
+		temp = temp.substring(1);
+		temp = temp.substring(0, temp.length() - 1);
+		return temp;
 	}
 
-	private int addToMemory(String temp) {
-		return 0;
-	}
-
+	/**
+	 * Entfernt das erste Zeichen des Strings, wenn es unerwünscht ist
+	 * 
+	 * @param temp
+	 *            String mit unerwünschtem Zeichen an
+	 * @param removed
+	 *            unerwüschte Zeichen
+	 * @return String ohne unerwünschten Zeichen
+	 * @throws AssemblerException
+	 */
 	private String removeChar(String temp, char removed) throws AssemblerException {
 		if (temp.charAt(0) == removed) {
 			return temp.substring(1);
